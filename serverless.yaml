@@ -1,0 +1,78 @@
+console: true
+service: getamped-api-server
+
+plugins:
+  - serverless-webpack
+  - serverless-webpack-prisma
+  - serverless-offline
+  - serverless-plugin-optimize
+  - serverless-plugin-warmup
+  - serverless-dotenv-plugin
+custom:
+  warmup:
+    default:
+      enabled: true
+      schedule: rate(3 minutes)
+      memorySize: 128
+      vpc: true
+  serverless-offline:
+    port: 4000
+  webpack:
+    webpackConfig: webpack.config.js
+    includeModules: true
+    packager: "npm"
+    packagerOptions:
+      - npx rimraf "node_modules/@types"
+      - npx rimraf "node_modules/aws-sdk"
+package:
+  individually: true
+  patterns:
+    - "node_modules/.prisma/client/libquery_engine*"
+    - "!node_modules/.prisma/client/libquery_engine-rhel*"
+    - "node_modules/prisma/libquery_engine*"
+    - "!node_modules/prisma/libquery_engine-rhel*"
+    - "node_modules/@prisma/engines/libquery_engine*"
+    - "!node_modules/@prisma/engines/libquery_engine-rhel*"
+    - "node_modules/@prisma/engines/migration-engine*"
+    - "!node_modules/@prisma/engines/migration-engine-rhel*"
+    - "node_modules/@prisma/engines/prisma-fmt*"
+    - "!node_modules/@prisma/engines/prisma-fmt-rhel*"
+    - "node_modules/@prisma/engines/introspection-engine*"
+    - "!node_modules/@prisma/engines/introspection-engine-rhel*"
+    # EXCLUDE query_engine-windows.dll.node
+    - "!node_modules/.prisma/client/query_engine-*"
+    # EXCLUDE .cache folder
+    - "!node_modules/.cache/**"
+    # EXCLUDE .bin folder
+    - "!node_modules/.bin/**"
+
+provider:
+  name: aws
+  runtime: nodejs16.x
+  region: ap-northeast-2
+  environment:
+    DB_URL: ${env.DB_URL}
+  iam:
+    role:
+      statements:
+        - Effect: "Allow"
+          Action: "lambda:InvokeFunction"
+          Resource: "*"
+
+functions:
+  getamped:
+    handler: src/index.handler
+    memorySize: 512
+    timeout: 10
+    events:
+      - http:
+          path: graphql
+          method: post
+          cors: "https://getamped-dictionary.com/"
+          integration: lambda-proxy
+
+      - http:
+          path: graphql
+          method: get
+          cors: "https://getamped-dictionary.com/"
+          integration: lambda-proxy

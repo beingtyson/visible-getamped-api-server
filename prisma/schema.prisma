@@ -1,0 +1,68 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-1.0.x"]
+}
+
+generator typegraphql {
+  provider = "typegraphql-prisma"
+  output   = "./generated/type-graphql"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DB_URL")
+}
+
+model Character {
+  id                String           @id
+  displayName       String           @db.VarChar(255)
+  regDate           String           @db.VarChar(255)
+  detailDescription String?          @db.Text
+  price             String           @db.VarChar(255)
+  priceType         String           @db.VarChar(255)
+  img               String
+  characterType     Character_Type[]
+}
+
+model Character_Type {
+  id                   Int       @id @default(autoincrement())
+  characterId          String
+  displayCharacterType String    @db.VarChar(255)
+  img                  String    @db.VarChar(255)
+  statImg              String    @db.VarChar(255)
+  Character            Character @relation(fields: [characterId], references: [id])
+
+  @@index([characterId], map: "Character_Type_characterId_fkey")
+}
+
+model User {
+  id Int    @id @default(autoincrement())
+  ip String @db.VarChar(255)
+}
+
+model Accessory {
+  id                 Int     @id
+  code               String  @db.VarChar(255)
+  regDate            String  @db.VarChar(255)
+  img                String  @db.VarChar(255)
+  price              String? @db.VarChar(255)
+  priceType          String? @db.VarChar(255)
+  name               String  @db.VarChar(255)
+  statImg            String  @db.VarChar(255)
+  detailDescription  String? @db.Text
+  detailCommand      String? @db.Text
+  availableCharacter Json
+  averageRate        Float   @default(0) @db.Float
+  rates              Rate[]
+}
+
+model Rate {
+  id          Int       @id @default(autoincrement())
+  ip          String    @db.VarChar(255)
+  accessoryId Int
+  rate        Float?    @db.Float
+  comment     String    @db.Text
+  accessory   Accessory @relation(fields: [accessoryId], references: [id])
+
+  @@index([accessoryId], map: "Rate_accessoryId_fkey")
+}
